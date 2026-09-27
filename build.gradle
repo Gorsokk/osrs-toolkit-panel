@@ -46,7 +46,9 @@ tasks.withType(JavaCompile).configureEach {
 tasks.register('runClient', JavaExec) {
 	group = 'application'
 	description = 'Starts a RuneLite dev client with this plugin'
-	mainClass = withPositionExporter ? 'com.gorsok.toolkitpanel.DevLauncher' : 'com.gorsok.toolkitpanel.ToolkitPanelPluginTest'
+	mainClass = withPositionExporter
+		? 'com.gorsok.toolkitpanel.DevLauncher'
+		: 'com.gorsok.toolkitpanel.ToolkitPanelPluginTest'
 	classpath = sourceSets.test.runtimeClasspath
 	jvmArgs = ['-ea']
 	standardInput = System.in

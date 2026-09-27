@@ -1,0 +1,53 @@
+plugins {
+	id 'java'
+}
+
+repositories {
+	mavenLocal()
+	maven {
+		url = 'https://repo.runelite.net'
+		content {
+			includeGroupByRegex("net\\.runelite.*")
+		}
+	}
+	mavenCentral()
+}
+
+def runeLiteVersion = 'latest.release'
+
+dependencies {
+	compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	testCompileOnly 'org.projectlombok:lombok:1.18.30'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+	testImplementation 'junit:junit:4.12'
+	testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+	testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
+}
+
+group = 'com.gorsok'
+version = '0.1.0'
+
+// Author's dev setup only: if Position Exporter sits next to this project, `runClient` starts both plugins.
+def positionExporter = file('../position-exporter/src/main/java')
+def withPositionExporter = positionExporter.exists()
+if (withPositionExporter) {
+	sourceSets.test.java.srcDirs positionExporter, 'src/dev/java'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release.set(11)
+}
+
+tasks.register('runClient', JavaExec) {
+	group = 'application'
+	description = 'Starts a RuneLite dev client with this plugin'
+	mainClass = withPositionExporter ? 'com.gorsok.toolkitpanel.DevLauncher' : 'com.gorsok.toolkitpanel.ToolkitPanelPluginTest'
+	classpath = sourceSets.test.runtimeClasspath
+	jvmArgs = ['-ea']
+	standardInput = System.in
+}

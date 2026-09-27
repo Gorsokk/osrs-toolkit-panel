@@ -47,7 +47,9 @@ class ToolkitClient
 	/** Calls {@code done} (on an OkHttp thread) with a snapshot; connected=false when the app isn't running. */
 	void fetch(int configuredPort, Consumer<ToolkitSnapshot> done)
 	{
-		port = configuredPort;
+		// 0 or an invalid value (e.g. saved by an older version where 0 meant "automatic") -> default port
+		port = configuredPort > 0 && configuredPort <= 65535 ? configuredPort : 8765;
+		final int usedPort = port;
 		ToolkitSnapshot s = new ToolkitSnapshot();
 		get("/api/ping", ping ->
 		{
@@ -58,7 +60,7 @@ class ToolkitClient
 				return;
 			}
 			s.connected = true;
-			s.port = configuredPort;
+			s.port = usedPort;
 			s.version = str(p, "version");
 
 			AtomicInteger remaining = new AtomicInteger(3);

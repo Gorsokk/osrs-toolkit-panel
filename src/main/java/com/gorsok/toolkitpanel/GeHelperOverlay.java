@@ -73,7 +73,8 @@ class GeHelperOverlay extends OverlayPanel
 				GrandExchangeOfferState st = o.getState();
 				buy = st == GrandExchangeOfferState.BUYING || st == GrandExchangeOfferState.BOUGHT
 					|| st == GrandExchangeOfferState.CANCELLED_BUY;
-				price = o.getPrice();
+				// the API returns a long since RuneLite 1.12; GE prices always fit in an int
+				price = (int) Math.min(Integer.MAX_VALUE, o.getPrice());
 				qty = Math.max(1, o.getTotalQuantity() - o.getQuantitySold());
 			}
 		}

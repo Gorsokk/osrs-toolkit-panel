@@ -1,5 +1,7 @@
 # OSRS Toolkit Panel
 
+Part of the **OSRS Toolkit** suite: the [OSRS Toolkit app](https://github.com/Gorsokk/osrs-toolkit), OSRS Toolkit Exporter and OSRS Toolkit Panel (this plugin).
+
 A RuneLite plugin that helps you **see** whether a Grand Exchange price is a good deal before you confirm it.
 
 ![GE price helper](docs/ge-helper.png)

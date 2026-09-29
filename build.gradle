@@ -31,11 +31,13 @@ dependencies {
 group = 'com.gorsok'
 version = '0.1.0'
 
-// Author's dev setup only: if Position Exporter sits next to this project, `runClient` starts both plugins.
-def positionExporter = file('../position-exporter/src/main/java')
-def withPositionExporter = positionExporter.exists()
+// Author's dev setup only: if OSRS Toolkit Exporter sits next to this project (folder osrs-toolkit-exporter,
+// or its old name position-exporter), `runClient` starts the whole suite: Panel + Exporter.
+def exporterSrc = ['../osrs-toolkit-exporter', '../position-exporter']
+	.collect { file("${it}/src/main/java") }.find { it.exists() }
+def withPositionExporter = exporterSrc != null
 if (withPositionExporter) {
-	sourceSets.test.java.srcDirs positionExporter, 'src/dev/java'
+	sourceSets.test.java.srcDirs exporterSrc, 'src/dev/java'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -45,7 +47,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.register('runClient', JavaExec) {
 	group = 'application'
-	description = 'Starts a RuneLite dev client with this plugin'
+	description = 'Starts a RuneLite dev client with this plugin (and OSRS Toolkit Exporter when it sits next to it)'
 	mainClass = withPositionExporter
 		? 'com.gorsok.toolkitpanel.DevLauncher'
 		: 'com.gorsok.toolkitpanel.ToolkitPanelPluginTest'

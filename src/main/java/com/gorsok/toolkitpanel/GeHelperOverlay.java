@@ -21,7 +21,10 @@ class GeHelperOverlay extends OverlayPanel
 	private static final int VARP_GE_ITEM = 1151;       // item being set up (-1 = none)
 	private static final int VARBIT_QUANTITY = 4396;
 	private static final int VARBIT_TYPE = 4397;        // 0 = buy, 1 = sell
-	private static final int VARBIT_PRICE = 4398;
+	// The typed price of a NEW offer: a 64-bit varp since the Beyond Max Cash update (RuneLite 1.13.1 removed the old
+	// varbit and does not name this varp). Checked on a live client on 30 Sep 2026: it holds the typed price exactly,
+	// including 12,877,762,346. Use the VarPlayerID constant once RuneLite names it.
+	private static final int VARP_PRICE = 5753;
 	private static final int VARBIT_SELECTED_SLOT = 4439;  // 1-8 while looking at an existing offer, 0 otherwise
 
 	private static final Color GOLD = new Color(0xE0B64B);
@@ -59,9 +62,8 @@ class GeHelperOverlay extends OverlayPanel
 		// 1) setting up a new offer
 		int itemId = client.getVarpValue(VARP_GE_ITEM);
 		boolean buy = varbit(VARBIT_TYPE) != 1;   // 0 = buy, 1 = sell; unknown counts as buy
-		// A NEW offer's price comes from a game variable that can't hold the new maximum prices. -1 = the game no longer
-		// has it (after the Beyond Max Cash update RuneLite throws "Varbit 4398 does not exist"): see Price.canReadTypedPrice
-		long price = varbit(VARBIT_PRICE);
+		// A NEW offer's price: -1 when this client can't give it (no such varp), so no price warning is made from it.
+		long price = typedPrice();
 		boolean existingOffer = false;
 		long qty = varbit(VARBIT_QUANTITY);
 		// 2) looking at an offer already placed ("Offer status")
@@ -94,7 +96,7 @@ class GeHelperOverlay extends OverlayPanel
 			line(Text.t("ge_loading"), "", Color.LIGHT_GRAY);
 			return super.render(g);
 		}
-		boolean priceReadable = existingOffer || p.canReadTypedPrice(price);
+		boolean priceReadable = existingOffer || price >= 0;
 		if (!priceReadable)
 		{
 			price = 0;   // no warning is made from a price that can't be trusted
@@ -201,6 +203,19 @@ class GeHelperOverlay extends OverlayPanel
 			panelComponent.getChildren().add(TitleComponent.builder().text("★ " + Text.t("ge_flip")).color(GOOD).build());
 		}
 		return super.render(g);
+	}
+
+	/** The price typed into a new offer (64-bit), or -1 when the client can't give it. Never throws. */
+	private long typedPrice()
+	{
+		try
+		{
+			return client.getVarpLongValue(VARP_PRICE);
+		}
+		catch (RuntimeException e)
+		{
+			return -1;
+		}
 	}
 
 	/** A varbit's value, or -1 when the game no longer has it (RuneLite throws "Varbit N does not exist"). Never throws. */

@@ -1,9 +1,7 @@
 package com.gorsok.toolkitpanel;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -147,29 +145,17 @@ public class BeyondMaxCashTest
 		assertEquals(0L, WikiPrices.saturatingMultiply(0, Long.MAX_VALUE));
 	}
 
-	// ---------------------------------------------------------------- the typed price of a new offer
+	// ---------------------------------------------------------------- numbers seen on a live client (30 Sep 2026)
 	@Test
-	public void typedPriceIsTrustedOnlyWhenTheItemFitsIn32Bits()
+	public void totalsMatchWhatTheGameShowedInTheOfferWindow()
 	{
-		WikiPrices.Price cheap = new WikiPrices.Price();
-		cheap.instantBuy = 1_000_000L;
-		cheap.avgSell1h = 900_000L;
-		assertTrue(cheap.canReadTypedPrice(950_000L));
-		assertTrue(cheap.canReadTypedPrice(0L));
-		assertFalse("a negative value is garbage", cheap.canReadTypedPrice(-5L));
-		assertFalse("-1 = the game variable no longer exists (Varbit 4398 does not exist)", cheap.canReadTypedPrice(-1L));
-
-		WikiPrices.Price huge = new WikiPrices.Price();
-		huge.instantSell = 3_500_000_000L;
-		assertEquals(3_500_000_000L, huge.highestKnown());
-		assertFalse(huge.canReadTypedPrice(2_000_000L));
-
-		WikiPrices.Price onlyAverageIsHuge = new WikiPrices.Price();
-		onlyAverageIsHuge.avgBuy1h = 2_200_000_000L;
-		assertFalse(onlyAverageIsHuge.canReadTypedPrice(1L));
-
-		assertEquals(0L, new WikiPrices.Price().highestKnown());
-		assertTrue(new WikiPrices.Price().canReadTypedPrice(10L));
+		// quantity 110 at 5,250,000,000 each: the game's own total read 577,500,000,000 coins
+		assertEquals(577_500_000_000L, WikiPrices.saturatingMultiply(5_250_000_000L, 110));
+		// quantity 110 at 110 each: 12,100 coins
+		assertEquals(12_100L, WikiPrices.saturatingMultiply(110, 110));
+		// the typed prices above 2,147,483,647 go through the display without wrapping around
+		assertEquals("12.9B", Text.gp(12_877_762_346L));
+		assertEquals("5.25B", Text.gp(5_250_000_000L));
 	}
 
 	// ---------------------------------------------------------------- display

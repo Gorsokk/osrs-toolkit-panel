@@ -39,8 +39,8 @@ final class Text
 		put("ge_margin", "Margin (tax)", "Marge (taxe)");
 		put("ge_limit", "Buy limit", "Limite");
 		put("ge_vol", "Volume 1h", "Volume 1 h");
-		put("ge_warn_over", "Above instant buy by %s", "Au-dessus de l'achat instant. de %s");
-		put("ge_warn_under", "Below instant sell by %s", "Sous la vente instant. de %s");
+		put("ge_warn_over", "Above instant buy by %s", "Au-dessus de l'achat de %s");
+		put("ge_warn_under", "Below instant sell by %s", "Sous la vente de %s");
 		put("ge_loading", "Loading prices...", "Chargement des prix...");
 		put("ge_flip", "In your top flips", "Dans tes meilleurs flips");
 		put("ge_last_sell", "Last sale", "Dernière vente");

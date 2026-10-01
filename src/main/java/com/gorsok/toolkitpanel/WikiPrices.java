@@ -39,29 +39,6 @@ class WikiPrices
 		Integer limit;
 		Integer highAlch;
 		Integer natureRune;
-
-		/** Highest price known for this item, 0 when none. */
-		long highestKnown()
-		{
-			long max = 0;
-			for (Long v : new Long[]{instantBuy, instantSell, avgBuy1h, avgSell1h})
-			{
-				if (v != null)
-				{
-					max = Math.max(max, v);
-				}
-			}
-			return max;
-		}
-
-		/**
-		 * Can a price typed into a NEW GE offer be trusted? It comes from a game variable that can't hold prices above
-		 * 2,147,483,647, so it can't when this item trades above that range, nor when the game gave no value (negative).
-		 */
-		boolean canReadTypedPrice(long typed)
-		{
-			return typed >= 0 && highestKnown() <= Integer.MAX_VALUE;
-		}
 	}
 
 	private final OkHttpClient http;

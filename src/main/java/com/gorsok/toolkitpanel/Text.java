@@ -53,6 +53,7 @@ final class Text
 		put("ge_stale", "Few trades: prices %s old", "Peu d'échanges : prix vieux de %s");
 		put("ge_bid_room", "Room to bid higher: +%s", "Marge pour monter : +%s");
 		put("ge_over_max", "Above the profitable max", "Au-dessus du max rentable");
+		put("ge_price_unreadable", "Typed price unreadable", "Prix saisi illisible");
 		put("ge_ask_high", "Above the last buy: may be slow", "Au-dessus du dernier achat : peut être lent");
 		put("chart_loading", "Loading chart...", "Chargement du graphique...");
 		put("chart_nodata", "No price history", "Pas d'historique de prix");
@@ -92,7 +93,11 @@ final class Text
 		}
 		long a = Math.abs(n);
 		String s;
-		if (a >= 1_000_000_000L)
+		if (a >= 1_000_000_000_000L)
+		{
+			s = trim(n / 1e12) + "T";
+		}
+		else if (a >= 1_000_000_000L)
 		{
 			s = trim(n / 1e9) + "B";
 		}

@@ -58,11 +58,14 @@ class GeHelperOverlay extends OverlayPanel
 		}
 		// 1) setting up a new offer
 		int itemId = client.getVarpValue(VARP_GE_ITEM);
-		boolean buy = client.getVarbitValue(VARBIT_TYPE) == 0;
-		int price = client.getVarbitValue(VARBIT_PRICE);
-		int qty = client.getVarbitValue(VARBIT_QUANTITY);
+		boolean buy = varbit(VARBIT_TYPE) != 1;   // 0 = buy, 1 = sell; unknown counts as buy
+		// A NEW offer's price comes from a game variable that can't hold the new maximum prices. -1 = the game no longer
+		// has it (after the Beyond Max Cash update RuneLite throws "Varbit 4398 does not exist"): see Price.canReadTypedPrice
+		long price = varbit(VARBIT_PRICE);
+		boolean existingOffer = false;
+		long qty = varbit(VARBIT_QUANTITY);
 		// 2) looking at an offer already placed ("Offer status")
-		int slot = client.getVarbitValue(VARBIT_SELECTED_SLOT);
+		int slot = varbit(VARBIT_SELECTED_SLOT);
 		if (itemId <= 0 && slot >= 1 && slot <= 8)
 		{
 			GrandExchangeOffer[] offers = client.getGrandExchangeOffers();
@@ -73,9 +76,10 @@ class GeHelperOverlay extends OverlayPanel
 				GrandExchangeOfferState st = o.getState();
 				buy = st == GrandExchangeOfferState.BUYING || st == GrandExchangeOfferState.BOUGHT
 					|| st == GrandExchangeOfferState.CANCELLED_BUY;
-				// the API returns a long since RuneLite 1.12; GE prices always fit in an int
-				price = (int) Math.min(Integer.MAX_VALUE, o.getPrice());
-				qty = Math.max(1, o.getTotalQuantity() - o.getQuantitySold());
+				// getPrice() is a long since RuneLite 1.13.0: an offer can be above 2,147,483,647 gp (Beyond Max Cash)
+				price = o.getPrice();
+				existingOffer = true;
+				qty = Math.max(1L, (long) o.getTotalQuantity() - o.getQuantitySold());
 			}
 		}
 		if (itemId <= 0)
@@ -89,6 +93,11 @@ class GeHelperOverlay extends OverlayPanel
 		{
 			line(Text.t("ge_loading"), "", Color.LIGHT_GRAY);
 			return super.render(g);
+		}
+		boolean priceReadable = existingOffer || p.canReadTypedPrice(price);
+		if (!priceReadable)
+		{
+			price = 0;   // no warning is made from a price that can't be trusted
 		}
 		// The last REAL trades: what a seller just accepted (= what the top buyers pay) and what a buyer just paid.
 		line(Text.t("ge_last_sell"), Text.t("ge_ago", Text.gp(p.instantSell), Text.ago(p.sellTime)), Color.WHITE);
@@ -138,7 +147,7 @@ class GeHelperOverlay extends OverlayPanel
 				{
 					if (price > high)
 					{
-						warn(Text.t("ge_warn_over", Text.gp((long) (price - high) * Math.max(qty, 1))), BAD);
+						warn(Text.t("ge_warn_over", Text.gp(WikiPrices.saturatingMultiply(price - high, Math.max(qty, 1L)))), BAD);
 					}
 					else if (price > maxBid)
 					{
@@ -157,13 +166,18 @@ class GeHelperOverlay extends OverlayPanel
 				line(Text.t("ge_ask"), Text.gp(ask) + "  (" + Text.gp(WikiPrices.netSell(ask)) + " net)", GOOD);
 				if (price > 0 && price < low)
 				{
-					warn(Text.t("ge_warn_under", Text.gp((long) (low - price) * Math.max(qty, 1))), BAD);
+					warn(Text.t("ge_warn_under", Text.gp(WikiPrices.saturatingMultiply(low - price, Math.max(qty, 1L)))), BAD);
 				}
 				else if (price > high)
 				{
 					warn(Text.t("ge_ask_high"), GOLD);
 				}
 			}
+		}
+
+		if (!priceReadable)
+		{
+			warn(Text.t("ge_price_unreadable"), GOLD);
 		}
 
 		if (config.geChart())
@@ -187,6 +201,19 @@ class GeHelperOverlay extends OverlayPanel
 			panelComponent.getChildren().add(TitleComponent.builder().text("★ " + Text.t("ge_flip")).color(GOOD).build());
 		}
 		return super.render(g);
+	}
+
+	/** A varbit's value, or -1 when the game no longer has it (RuneLite throws "Varbit N does not exist"). Never throws. */
+	private int varbit(int id)
+	{
+		try
+		{
+			return client.getVarbitValue(id);
+		}
+		catch (IndexOutOfBoundsException e)
+		{
+			return -1;
+		}
 	}
 
 	private void line(String left, String right, Color rightColor)

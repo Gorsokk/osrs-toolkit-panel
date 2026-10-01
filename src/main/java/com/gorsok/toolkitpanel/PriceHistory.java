@@ -15,16 +15,19 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-/** Price history for the GE chart (OSRS Wiki /timeseries). Fetched on demand, cached 5 minutes per item and range. */
+/**
+ * Price history for the GE chart (OSRS Wiki /timeseries). Fetched on demand, cached 5 minutes per item and range.
+ * Prices are {@code Long}: they can be above 2,147,483,647 gp, so no sum or average may be done on 32-bit numbers.
+ */
 @Slf4j
 class PriceHistory
 {
 	static class Point
 	{
 		final long ts;
-		final Integer high, low;   // average instant-buy / instant-sell price in that step (may be null)
+		final Long high, low;   // average instant-buy / instant-sell price in that step (may be null)
 
-		Point(long ts, Integer high, Integer low)
+		Point(long ts, Long high, Long low)
 		{
 			this.ts = ts;
 			this.high = high;
@@ -35,9 +38,17 @@ class PriceHistory
 		{
 			if (high != null && low != null)
 			{
-				return (high + low) / 2.0;
+				return ((double) high + low) / 2.0;   // never an int addition: two 1.5B prices would wrap around
 			}
-			return high != null ? (double) high : low != null ? (double) low : null;
+			if (high != null)
+			{
+				return (double) high;
+			}
+			if (low != null)
+			{
+				return (double) low;
+			}
+			return null;   // a step without any trade (written out: a nested ?: would unbox this null and throw)
 		}
 	}
 
@@ -124,7 +135,8 @@ class PriceHistory
 						for (JsonElement el : arr)
 						{
 							JsonObject p = el.getAsJsonObject();
-							out.add(new Point(p.get("timestamp").getAsLong(), num(p, "avgHighPrice"), num(p, "avgLowPrice")));
+							out.add(new Point(p.get("timestamp").getAsLong(),
+								WikiPrices.num(p, "avgHighPrice"), WikiPrices.num(p, "avgLowPrice")));
 						}
 					}
 				}
@@ -137,21 +149,16 @@ class PriceHistory
 		});
 	}
 
-	private static Integer num(JsonObject o, String k)
-	{
-		return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsInt() : null;
-	}
-
 	/** Where the current price sits in the range's usual prices (5th-95th percentile): 0 = bottom, 1 = top. */
 	static Double position(List<Point> pts, double current)
 	{
-		List<Integer> mids = new ArrayList<>();
+		List<Long> mids = new ArrayList<>();
 		for (Point p : pts)
 		{
 			Double m = p.mid();
 			if (m != null)
 			{
-				mids.add((int) Math.round(m));
+				mids.add(Math.round(m));
 			}
 		}
 		if (mids.size() < 5)
@@ -168,7 +175,7 @@ class PriceHistory
 	}
 
 	/** Percentile of an already sorted list. */
-	static double percentile(List<Integer> sorted, double pct)
+	static double percentile(List<Long> sorted, double pct)
 	{
 		if (sorted.isEmpty())
 		{
@@ -176,7 +183,8 @@ class PriceHistory
 		}
 		double k = (sorted.size() - 1) * pct / 100.0;
 		int f = (int) Math.floor(k), c = Math.min(sorted.size() - 1, f + 1);
-		return sorted.get(f) + (sorted.get(c) - sorted.get(f)) * (k - f);
+		double a = sorted.get(f), b = sorted.get(c);
+		return a + (b - a) * (k - f);
 	}
 
 	static Double average(List<Point> pts)

@@ -38,8 +38,8 @@ class PriceChartComponent implements LayoutableRenderableEntity
 	// inputs, set before each render
 	List<PriceHistory.Point> points;
 	ChartRange range;
-	Integer lastBuy, lastSell;
-	Integer offer;          // player's price, or null
+	Long lastBuy, lastSell;
+	Long offer;          // player's price, or null
 	Long alchFloor;         // high alch value - nature rune, or null
 	boolean buying;
 
@@ -67,7 +67,7 @@ class PriceChartComponent implements LayoutableRenderableEntity
 
 		// ---------- scale
 		// Robust scale: ignore the 3 % most extreme prices (one troll trade at 20 gp would flatten everything).
-		java.util.List<Integer> all = new java.util.ArrayList<>();
+		java.util.List<Long> all = new java.util.ArrayList<>();
 		for (PriceHistory.Point p : points)
 		{
 			if (p.high != null) all.add(p.high);
@@ -75,7 +75,7 @@ class PriceChartComponent implements LayoutableRenderableEntity
 		}
 		java.util.Collections.sort(all);
 		double lo = PriceHistory.percentile(all, 3), hi = PriceHistory.percentile(all, 97);
-		for (Integer v : new Integer[]{lastBuy, lastSell})
+		for (Long v : new Long[]{lastBuy, lastSell})
 		{
 			if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
 		}
@@ -174,7 +174,7 @@ class PriceChartComponent implements LayoutableRenderableEntity
 		Double pos = null;
 		if (lastBuy != null && lastSell != null)
 		{
-			pos = PriceHistory.position(points, (lastBuy + lastSell) / 2.0);
+			pos = PriceHistory.position(points, ((double) lastBuy + lastSell) / 2.0);   // not an int sum: 2 x 1.5B would wrap around
 		}
 		int gh = drawGauge(g, pos, x0, gy, w, fm);
 
@@ -252,7 +252,7 @@ class PriceChartComponent implements LayoutableRenderableEntity
 		g.drawString(s, cx + 3, ty);
 	}
 
-	private static void dot(Graphics2D g, Integer v, Color c, double yLo, double yHi, int x, int cy, int ch)
+	private static void dot(Graphics2D g, Long v, Color c, double yLo, double yHi, int x, int cy, int ch)
 	{
 		if (v == null)
 		{

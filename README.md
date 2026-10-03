@@ -52,6 +52,11 @@ gradlew runClient      (Windows: run-toolkit-panel.bat)
 
 Prices shown are information, not financial advice: always check the live price in game.
 
+## Support and feedback
+
+This plugin is free and stays free. If it helps you, you can [support Gorsok on Ko-fi](https://ko-fi.com/gorsok),
+or just say thanks there. Bugs and ideas: [open an issue](https://github.com/Gorsokk/osrs-toolkit-panel/issues).
+
 ## License
 
 BSD 2-Clause
